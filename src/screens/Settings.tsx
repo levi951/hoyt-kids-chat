@@ -179,7 +179,7 @@ function SettingCard({
             onChange={(e) => onWebhookChange(e.target.value)}
             placeholder="Paste webhook URL here..."
             className="w-full border-none rounded-lg px-6 py-4 text-gray-900 focus:ring-2 transition-all shadow-sm"
-            style={{ focusRingColor: `${color}40` }}
+            style={{ '--ring-color': color } as any}
           />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400">
             link
