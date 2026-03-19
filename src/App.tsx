@@ -48,6 +48,14 @@ const USER_ROSTER: Record<string, User> = {
   kelly: { id: 'kelly', name: 'Kelly', role: 'Family', botId: 'betty' },
 }
 
+// Phone numbers for team members (easy password alternative)
+const PHONE_CREDENTIALS: Record<string, string> = {
+  '612-323-2406': 'john',      // John's phone
+  '612-867-5309': 'jonny',     // Jonny's phone (placeholder)
+  '612-555-0123': 'lisa',      // Lisa's phone (placeholder)
+  '651-212-4965': 'levi',      // Hoyt main line (Levi)
+}
+
 export default function App() {
   const [screen, setScreen] = useState<Screen>('login')
   const [currentUser, setCurrentUser] = useState<User | null>(null)
@@ -55,6 +63,27 @@ export default function App() {
   const [webhookUrl, setWebhookUrl] = useState<string>('')
 
   useEffect(() => {
+    // Check URL parameters first (direct link: ?user=john&pass=hoyt2026)
+    const params = new URLSearchParams(window.location.search)
+    const urlUser = params.get('user')
+    const urlPass = params.get('pass')
+
+    if (urlUser && urlPass === 'hoyt2026') {
+      // Direct link with password - auto-login
+      const user = USER_ROSTER[urlUser.toLowerCase()]
+      if (user) {
+        setCurrentUser(user)
+        setCurrentBot(BOT_CATALOG[user.botId])
+        setWebhookUrl(localStorage.getItem(`webhook_${user.botId}`) || '')
+        localStorage.setItem('hoyt_user', JSON.stringify(user))
+        setScreen('chat')
+        // Clean up URL (remove query params)
+        window.history.replaceState({}, '', window.location.pathname)
+        return
+      }
+    }
+
+    // Otherwise check localStorage
     const saved = localStorage.getItem('hoyt_user')
     if (saved) {
       const user: User = JSON.parse(saved)
@@ -76,6 +105,14 @@ export default function App() {
     }
   }
 
+  // Phone + password auth (alternative to username selection)
+  const handlePhoneLogin = (phone: string) => {
+    const username = PHONE_CREDENTIALS[phone]
+    if (username) {
+      handleLogin(username)
+    }
+  }
+
   const handleLogout = () => {
     setCurrentUser(null)
     setCurrentBot(null)
@@ -92,7 +129,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {screen === 'login' && <Login onLogin={handleLogin} users={USER_ROSTER} />}
+      {screen === 'login' && <Login onLogin={handleLogin} onPhoneLogin={handlePhoneLogin} users={USER_ROSTER} phoneCredentials={PHONE_CREDENTIALS} />}
       {screen === 'chat' && currentUser && currentBot && (
         <Chat
           user={currentUser}

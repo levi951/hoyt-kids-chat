@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /
+
+# Hoyt GPT is a private application
+# This prevents search engines from indexing the site

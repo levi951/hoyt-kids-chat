@@ -8,16 +8,20 @@ interface User {
 
 interface LoginProps {
   onLogin: (username: string) => void
+  onPhoneLogin: (phone: string) => void
   users: Record<string, User>
+  phoneCredentials: Record<string, string>
 }
 
 // Simple password protection - these can be changed via environment variables
 const MASTER_PASSWORD = 'hoyt2026'
 
-export default function Login({ onLogin, users }: LoginProps) {
-  const [loginMode, setLoginMode] = useState<'password' | 'username'>('password')
+export default function Login({ onLogin, onPhoneLogin, users, phoneCredentials }: LoginProps) {
+  const [loginMode, setLoginMode] = useState<'password' | 'username' | 'phone'>('password')
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
+  const [phone, setPhone] = useState('')
+  const [phonePassword, setPhonePassword] = useState('')
   const [passwordError, setPasswordError] = useState(false)
   const [authenticated, setAuthenticated] = useState(false)
 
@@ -26,6 +30,16 @@ export default function Login({ onLogin, users }: LoginProps) {
   const handlePasswordSubmit = () => {
     if (password === MASTER_PASSWORD) {
       setAuthenticated(true)
+      setPasswordError(false)
+    } else {
+      setPasswordError(true)
+      setTimeout(() => setPasswordError(false), 3000)
+    }
+  }
+
+  const handlePhoneSubmit = () => {
+    if (phonePassword === MASTER_PASSWORD && phone && phoneCredentials[phone]) {
+      onPhoneLogin(phone)
       setPasswordError(false)
     } else {
       setPasswordError(true)
@@ -123,7 +137,37 @@ export default function Login({ onLogin, users }: LoginProps) {
             <h2 className="text-white text-2xl sm:text-3xl font-black mt-2">Connect to Your Bot</h2>
           </div>
 
-          {/* Quick Select or Manual Entry */}
+          {/* Tab Selection: Quick Select, Manual, or Phone */}
+          <div className="flex gap-2 mb-8 border-b border-gray-800">
+            <button
+              onClick={() => {
+                setLoginMode('username')
+                setPasswordError(false)
+              }}
+              className={`px-4 py-3 font-bold uppercase tracking-widest text-sm transition-colors border-b-2 ${
+                loginMode === 'username'
+                  ? 'text-red-500 border-red-500'
+                  : 'text-gray-500 border-transparent hover:text-gray-400'
+              }`}
+            >
+              Quick Select
+            </button>
+            <button
+              onClick={() => {
+                setLoginMode('phone')
+                setPasswordError(false)
+              }}
+              className={`px-4 py-3 font-bold uppercase tracking-widest text-sm transition-colors border-b-2 ${
+                loginMode === 'phone'
+                  ? 'text-red-500 border-red-500'
+                  : 'text-gray-500 border-transparent hover:text-gray-400'
+              }`}
+            >
+              Phone
+            </button>
+          </div>
+
+          {/* Quick Select or Phone Entry */}
           {loginMode === 'username' ? (
             <>
               {/* Quick Select Grid */}
@@ -204,7 +248,59 @@ export default function Login({ onLogin, users }: LoginProps) {
                 Back to Quick Select
               </button>
             </>
-          )}
+          ) : loginMode === 'phone' ? (
+            <>
+              {/* Phone Login Form */}
+              <div className="mb-6 sm:mb-8">
+                <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 uppercase tracking-widest">Phone Number Access</p>
+                <div className="space-y-4">
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="Enter your phone (e.g., 612-323-2406)"
+                    className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-gray-950 border border-gray-800 focus:border-red-900 text-white placeholder:text-gray-600 focus:outline-none transition-colors text-sm sm:text-base"
+                    autoFocus
+                  />
+                  <input
+                    type="password"
+                    value={phonePassword}
+                    onChange={(e) => setPhonePassword(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handlePhoneSubmit()}
+                    placeholder="Enter password"
+                    className={`w-full px-4 sm:px-6 py-3 sm:py-4 bg-gray-950 border ${
+                      passwordError ? 'border-red-600' : 'border-gray-800 focus:border-red-900'
+                    } text-white placeholder:text-gray-600 focus:outline-none transition-colors text-sm sm:text-base`}
+                  />
+                  {passwordError && (
+                    <p className="text-red-500 text-xs sm:text-sm text-center font-bold">Invalid phone or password. Try again.</p>
+                  )}
+                  <button
+                    onClick={handlePhoneSubmit}
+                    disabled={!phone || !phonePassword}
+                    className="w-full py-3 sm:py-4 text-white font-bold uppercase tracking-widest rounded transition-all disabled:opacity-30 text-sm sm:text-base"
+                    style={{
+                      backgroundColor: phone && phonePassword ? '#AF0808' : '#333',
+                    }}
+                  >
+                    Access My Bot
+                  </button>
+                </div>
+              </div>
+
+              {/* Back Button */}
+              <button
+                onClick={() => {
+                  setLoginMode('username')
+                  setPhone('')
+                  setPhonePassword('')
+                }}
+                className="w-full py-3 sm:py-4 border border-gray-800 hover:border-red-900 bg-gray-950 hover:bg-gray-900 transition-all text-gray-400 hover:text-red-500 font-bold text-sm sm:text-base"
+              >
+                Back to Quick Select
+              </button>
+            </>
+          ) : null}
         </div>
       </main>
 
