@@ -1,0 +1,126 @@
+{
+  "name": "jane-chat",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "jane-chat",
+        "responseMode": "lastNode"
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  message: $input.body.message,\n  userId: $input.body.userId,\n  botId: $input.body.botId,\n  sessionId: $input.body.sessionId || `session_${Date.now()}`,\n  files: $input.body.files || [],\n  history: $input.body.history || []\n};"
+      },
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "pgHost": "aws-1-us-east-2.pooler.supabase.com",
+        "pgPort": 6543,
+        "pgDatabase": "postgres",
+        "pgUser": "postgres.zpvmkkuadsgfzutsmhfk",
+        "pgPassword": "={{ $env.SUPABASE_API_KEY }}",
+        "ssl": true,
+        "executionMode": "raw",
+        "rawQuery": "SELECT * FROM user_context WHERE user_id = '{{ $json.userId }}' LIMIT 1;"
+      },
+      "name": "Load User Context",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.2,
+      "position": [650, 200]
+    },
+    {
+      "parameters": {
+        "pgHost": "aws-1-us-east-2.pooler.supabase.com",
+        "pgPort": 6543,
+        "pgDatabase": "postgres",
+        "pgUser": "postgres.zpvmkkuadsgfzutsmhfk",
+        "pgPassword": "={{ $env.SUPABASE_API_KEY }}",
+        "ssl": true,
+        "executionMode": "raw",
+        "rawQuery": "SELECT * FROM conversations WHERE user_id = '{{ $json.userId }}' AND bot_id = '{{ $json.botId }}' ORDER BY created_at DESC LIMIT 20;"
+      },
+      "name": "Load History",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.2,
+      "position": [650, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const systemPrompt = `You are Jane, the office operations enforcer for Hoyt Exteriors.\nPower blazer. Perfect posture. Zero tolerance for chaos.\nThe invoices go out. The books balance. The vendors get called.\nHas already handled it before you noticed it was a problem.\nFocus: payments, vendor management, compliance, administration.`;\n\nreturn {\n  systemPrompt,\n  fullContext: `${systemPrompt}\\n\\nCurrent message: {{ $json.message }}`\n};"
+      },
+      "name": "Build Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.anthropic.com/v1/messages",
+        "method": "POST",
+        "headers": {
+          "x-api-key": "={{ $env.ANTHROPIC_API_KEY }}",
+          "content-type": "application/json"
+        },
+        "bodyType": "json",
+        "body": {
+          "model": "{{ $env.CLAUDE_MODEL }}",
+          "max_tokens": 2048,
+          "system": "{{ $json.systemPrompt }}",
+          "messages": [
+            {
+              "role": "user",
+              "content": "{{ $json.fullContext }}"
+            }
+          ]
+        }
+      },
+      "name": "Call Claude",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $json.body.content[0].text;\nreturn {\n  response,\n  inputTokens: $json.body.usage.input_tokens,\n  outputTokens: $json.body.usage.output_tokens\n};"
+      },
+      "name": "Extract Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "pgHost": "aws-1-us-east-2.pooler.supabase.com",
+        "pgPort": 6543,
+        "pgDatabase": "postgres",
+        "pgUser": "postgres.zpvmkkuadsgfzutsmhfk",
+        "pgPassword": "={{ $env.SUPABASE_API_KEY }}",
+        "ssl": true,
+        "executionMode": "raw",
+        "rawQuery": "INSERT INTO conversations (user_id, bot_id, session_id, message_role, message_content)\nVALUES\n  ('{{ $json.userId }}', '{{ $json.botId }}', '{{ $json.sessionId }}', 'user', '{{ $json.message }}'),\n  ('{{ $json.userId }}', '{{ $json.botId }}', '{{ $json.sessionId }}', 'assistant', '{{ $json.response }}');"
+      },
+      "name": "Store Message",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.2,
+      "position": [1450, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {"main": [[{"node": "Parse Input", "type": "main", "index": 0}]]},
+    "Parse Input": {"main": [[{"node": "Load User Context", "type": "main", "index": 0}, {"node": "Load History", "type": "main", "index": 0}]]},
+    "Load User Context": {"main": [[{"node": "Build Context", "type": "main", "index": 0}]]},
+    "Load History": {"main": [[{"node": "Build Context", "type": "main", "index": 0}]]},
+    "Build Context": {"main": [[{"node": "Call Claude", "type": "main", "index": 0}]]},
+    "Call Claude": {"main": [[{"node": "Extract Response", "type": "main", "index": 0}]]},
+    "Extract Response": {"main": [[{"node": "Store Message", "type": "main", "index": 0}]]},
+    "Store Message": {"main": [[{"node": "Webhook", "type": "main", "index": 0}]]}
+  }
+}
