@@ -29,9 +29,10 @@ interface ChatProps {
   webhookUrl: string
   onSettingsOpen: () => void
   onLogout: () => void
+  onAudioSwitch?: () => void
 }
 
-export default function Chat({ user, bot, webhookUrl, onSettingsOpen, onLogout }: ChatProps) {
+export default function Chat({ user, bot, webhookUrl, onSettingsOpen, onLogout, onAudioSwitch }: ChatProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -129,6 +130,15 @@ export default function Chat({ user, bot, webhookUrl, onSettingsOpen, onLogout }
           </div>
         </div>
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+          {onAudioSwitch && (
+            <button
+              onClick={onAudioSwitch}
+              className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center hover:bg-gray-900 transition-colors rounded text-sm sm:text-base"
+              title="Voice Chat"
+            >
+              <span className="material-symbols-outlined text-gray-400 hover:text-white">mic</span>
+            </button>
+          )}
           <button
             onClick={onSettingsOpen}
             className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center hover:bg-gray-900 transition-colors rounded text-sm sm:text-base"

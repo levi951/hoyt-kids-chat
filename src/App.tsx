@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import Login from './screens/Login'
 import Chat from './screens/Chat'
+import AudioChat from './screens/AudioChat'
 import Settings from './screens/Settings'
 
-type Screen = 'login' | 'chat' | 'settings'
+type Screen = 'login' | 'chat' | 'audio' | 'settings'
 type BotId = 'wraybot' | 'spike' | 'mack' | 'jane' | 'tally' | 'gage' | 'raptor' | 'odysseus' | 'betty' | 'nash'
 
 interface User {
@@ -132,6 +133,16 @@ export default function App() {
       {screen === 'login' && <Login onLogin={handleLogin} onPhoneLogin={handlePhoneLogin} users={USER_ROSTER} phoneCredentials={PHONE_CREDENTIALS} />}
       {screen === 'chat' && currentUser && currentBot && (
         <Chat
+          user={currentUser}
+          bot={currentBot}
+          webhookUrl={webhookUrl}
+          onSettingsOpen={() => setScreen('settings')}
+          onLogout={handleLogout}
+          onAudioSwitch={() => setScreen('audio')}
+        />
+      )}
+      {screen === 'audio' && currentUser && currentBot && (
+        <AudioChat
           user={currentUser}
           bot={currentBot}
           webhookUrl={webhookUrl}
