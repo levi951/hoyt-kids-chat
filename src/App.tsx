@@ -30,9 +30,9 @@ const BOT_CATALOG: Record<BotId, BotConfig> = {
   jane: { id: 'jane', name: 'Jane', role: 'Office Manager', icon: 'folder_open', accentColor: '#C8C8C8', description: 'Admin & Billing' },
   tally: { id: 'tally', name: 'Tally', role: 'Accounting Vault', icon: 'security', accentColor: '#AF0808', description: 'Financial Intelligence' },
   gage: { id: 'gage', name: 'Gage', role: 'Voice Agent', icon: 'phone', accentColor: '#C8C8C8', description: 'Inbound Handler' },
-  raptor: { id: 'raptor', name: 'Raptor', role: 'Dino Companion', icon: 'pets', accentColor: '#006947', description: 'Logan\'s Explorer' },
-  odysseus: { id: 'odysseus', name: 'Odysseus', role: 'Myth Guide', icon: 'rocket_launch', accentColor: '#702ae1', description: 'Sophia\'s Adventure' },
-  betty: { id: 'betty', name: 'Betty', role: 'Family Bot', icon: 'favorite', accentColor: '#AF0808', description: 'Kelly\'s Wisdom' },
+  raptor: { id: 'raptor', name: 'Raptor', role: 'Dino Companion', icon: 'pets', accentColor: '#00D474', description: 'Clever. Fast. Ready for adventure. 🦖' },
+  odysseus: { id: 'odysseus', name: 'Odysseus', role: 'Myth Guide', icon: 'rocket_launch', accentColor: '#9945FF', description: 'Deep thoughts. Cosmic journeys. Always here.' },
+  betty: { id: 'betty', name: 'Betty', role: 'Cosmic Grandma', icon: 'star', accentColor: '#00D4FF', description: 'Love, wisdom, and cosmic wonder ✨' },
   nash: { id: 'nash', name: 'Nash', role: 'Automation Engine', icon: 'precision_manufacturing', accentColor: '#C8C8C8', description: 'n8n Backbone' },
 }
 
