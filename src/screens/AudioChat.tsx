@@ -123,17 +123,21 @@ export default function AudioChat({ user, bot, webhookUrl, onSettingsOpen, onLog
       // Add user message to history
       setConversationHistory((prev) => [...prev, { role: 'user', text: message }])
 
-      // Call webhook
+      // Call Hoyt GPT proxy
       const response = await fetch(webhookUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Hoyt-Key': 'hoyt-gpt-key-2026',
+        },
         body: JSON.stringify({
           message,
           userId: user.id,
           botId: bot.id,
-          sessionId: sessionIdRef.current,
-          files: [],
-          history: conversationHistory,
+          history: conversationHistory.slice(-10).map(m => ({
+            role: m.role === 'bot' ? 'assistant' : 'user',
+            content: m.text,
+          })),
         }),
       })
 

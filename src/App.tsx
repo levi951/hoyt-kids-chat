@@ -57,28 +57,13 @@ const PHONE_CREDENTIALS: Record<string, string> = {
   '651-212-4965': 'levi',      // Hoyt main line (Levi)
 }
 
-// n8n webhook configuration (auto-generated based on bot)
-// Nash (n8n server) is at Tailscale IP 100.72.252.5:5678
-const N8N_BASE_URL = 'http://100.72.252.5:5678/webhook'
+// Hoyt GPT Chat Proxy — deployed on Nash (45.55.247.244:8080)
+// Public-facing, protected by API key. KB stays private on Tailscale.
+export const CHAT_PROXY_URL = 'http://45.55.247.244:8080/chat'
+export const HOYT_API_KEY = 'hoyt-gpt-key-2026'
 
-// Webhook path for each bot workflow
-const WEBHOOK_PATHS: Record<BotId, string> = {
-  wraybot: 'hoyt-wraybot-webhook',
-  spike: 'hoyt-spike-webhook',
-  mack: 'hoyt-mack-webhook',
-  jane: 'hoyt-jane-webhook',
-  gage: 'hoyt-gage-webhook',
-  tally: 'hoyt-tally-webhook',
-  raptor: 'hoyt-raptor-webhook',
-  odysseus: 'hoyt-odysseus-webhook',
-  betty: 'hoyt-betty-webhook',
-  nash: 'hoyt-nash-webhook',
-}
-
-// Generate webhook URL for a bot
-const getWebhookUrl = (botId: BotId): string => {
-  return `${N8N_BASE_URL}/${WEBHOOK_PATHS[botId]}`
-}
+// All bots use the same proxy endpoint — botId in the body determines personality
+const getWebhookUrl = (_botId: BotId): string => CHAT_PROXY_URL
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('login')

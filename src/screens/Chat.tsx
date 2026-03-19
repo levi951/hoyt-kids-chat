@@ -68,12 +68,15 @@ export default function Chat({ user, bot, webhookUrl, onSettingsOpen, onLogout, 
     try {
       const response = await fetch(webhookUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Hoyt-Key': 'hoyt-gpt-key-2026',
+        },
         body: JSON.stringify({
           message: input,
           userId: user.id,
           botId: bot.id,
-          history: messages,
+          history: messages.slice(-10).map(m => ({ role: m.role, content: m.content })),
         }),
       })
 
