@@ -1,77 +1,115 @@
-import { useState } from 'react'
-import Home from './screens/Home'
+import { useState, useEffect } from 'react'
+import Login from './screens/Login'
 import Chat from './screens/Chat'
 import Settings from './screens/Settings'
 
-type Screen = 'home' | 'chat' | 'settings'
-type BotType = 'raptor' | 'odysseus'
+type Screen = 'login' | 'chat' | 'settings'
+type BotId = 'wraybot' | 'spike' | 'mack' | 'jane' | 'tally' | 'gage' | 'raptor' | 'odysseus' | 'betty' | 'nash'
 
-const BOT_CONFIG = {
-  raptor: {
-    name: 'Raptor',
-    subtitle: 'The Forest Guardian',
-    icon: 'pets',
-    color: 'teal',
-    primaryColor: '#006947',
-    containerColor: '#69f6b8',
-  },
-  odysseus: {
-    name: 'Odysseus',
-    subtitle: 'The Deep Space Voyager',
-    icon: 'rocket_launch',
-    color: 'blue',
-    primaryColor: '#702ae1',
-    containerColor: '#dcc9ff',
-  },
+interface User {
+  id: string
+  name: string
+  role: string
+  botId: BotId
+}
+
+interface BotConfig {
+  id: BotId
+  name: string
+  role: string
+  icon: string
+  accentColor: string
+  description: string
+}
+
+// Noir aesthetic: Black + Hoyt Red (#AF0808) + Stainless (#C8C8C8)
+const BOT_CATALOG: Record<BotId, BotConfig> = {
+  wraybot: { id: 'wraybot', name: 'Wraybot', role: 'Master Controller', icon: 'admin_panel_settings', accentColor: '#AF0808', description: 'The Command Center' },
+  spike: { id: 'spike', name: 'Spike', role: 'Field Operations', icon: 'construction', accentColor: '#C8C8C8', description: 'Service & Field Ops' },
+  mack: { id: 'mack', name: 'Mack', role: 'Project Manager', icon: 'directions_run', accentColor: '#AF0808', description: 'Routing & Scheduling' },
+  jane: { id: 'jane', name: 'Jane', role: 'Office Manager', icon: 'folder_open', accentColor: '#C8C8C8', description: 'Admin & Billing' },
+  tally: { id: 'tally', name: 'Tally', role: 'Accounting Vault', icon: 'security', accentColor: '#AF0808', description: 'Financial Intelligence' },
+  gage: { id: 'gage', name: 'Gage', role: 'Voice Agent', icon: 'phone', accentColor: '#C8C8C8', description: 'Inbound Handler' },
+  raptor: { id: 'raptor', name: 'Raptor', role: 'Dino Companion', icon: 'pets', accentColor: '#006947', description: 'Logan\'s Explorer' },
+  odysseus: { id: 'odysseus', name: 'Odysseus', role: 'Myth Guide', icon: 'rocket_launch', accentColor: '#702ae1', description: 'Sophia\'s Adventure' },
+  betty: { id: 'betty', name: 'Betty', role: 'Family Bot', icon: 'favorite', accentColor: '#AF0808', description: 'Kelly\'s Wisdom' },
+  nash: { id: 'nash', name: 'Nash', role: 'Automation Engine', icon: 'precision_manufacturing', accentColor: '#C8C8C8', description: 'n8n Backbone' },
+}
+
+// User → Bot mapping
+const USER_ROSTER: Record<string, User> = {
+  levi: { id: 'levi', name: 'Levi Hoyt', role: 'Owner', botId: 'wraybot' },
+  john: { id: 'john', name: 'John', role: 'Service Manager', botId: 'spike' },
+  jonny: { id: 'jonny', name: 'Jonny', role: 'Project Manager', botId: 'mack' },
+  lisa: { id: 'lisa', name: 'Lisa', role: 'Office Manager', botId: 'jane' },
+  paul: { id: 'paul', name: 'Paul Hoyt', role: 'Patriarch', botId: 'gage' },
+  logan: { id: 'logan', name: 'Logan', role: 'Explorer', botId: 'raptor' },
+  sophia: { id: 'sophia', name: 'Sophia', role: 'Scholar', botId: 'odysseus' },
+  kelly: { id: 'kelly', name: 'Kelly', role: 'Family', botId: 'betty' },
 }
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>('home')
-  const [activeBots, setActiveBots] = useState<BotType | null>(null)
-  const [webhookUrls, setWebhookUrls] = useState<Record<BotType, string>>({
-    raptor: localStorage.getItem('webhook_raptor') || '',
-    odysseus: localStorage.getItem('webhook_odysseus') || '',
-  })
+  const [screen, setScreen] = useState<Screen>('login')
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [currentBot, setCurrentBot] = useState<BotConfig | null>(null)
+  const [webhookUrl, setWebhookUrl] = useState<string>('')
 
-  const handleSelectBot = (bot: BotType) => {
-    setActiveBots(bot)
-    setScreen('chat')
+  useEffect(() => {
+    const saved = localStorage.getItem('hoyt_user')
+    if (saved) {
+      const user: User = JSON.parse(saved)
+      setCurrentUser(user)
+      setCurrentBot(BOT_CATALOG[user.botId as BotId])
+      setWebhookUrl(localStorage.getItem(`webhook_${user.botId}`) || '')
+      setScreen('chat')
+    }
+  }, [])
+
+  const handleLogin = (username: string) => {
+    const user = USER_ROSTER[username.toLowerCase()]
+    if (user) {
+      setCurrentUser(user)
+      setCurrentBot(BOT_CATALOG[user.botId])
+      setWebhookUrl(localStorage.getItem(`webhook_${user.botId}`) || '')
+      localStorage.setItem('hoyt_user', JSON.stringify(user))
+      setScreen('chat')
+    }
   }
 
-  const handleSaveWebhooks = (urls: Record<BotType, string>) => {
-    setWebhookUrls(urls)
-    localStorage.setItem('webhook_raptor', urls.raptor)
-    localStorage.setItem('webhook_odysseus', urls.odysseus)
+  const handleLogout = () => {
+    setCurrentUser(null)
+    setCurrentBot(null)
+    localStorage.removeItem('hoyt_user')
+    setScreen('login')
   }
 
-  const handleBack = () => {
-    setScreen('home')
-    setActiveBots(null)
+  const handleWebhookUpdate = (url: string) => {
+    if (currentUser) {
+      setWebhookUrl(url)
+      localStorage.setItem(`webhook_${currentUser.botId}`, url)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-surface text-on-surface">
-      {screen === 'home' && (
-        <Home
-          botConfig={BOT_CONFIG}
-          onSelectBot={handleSelectBot}
-          onOpenSettings={() => setScreen('settings')}
-        />
-      )}
-      {screen === 'chat' && activeBots && (
+    <div className="min-h-screen bg-black text-white">
+      {screen === 'login' && <Login onLogin={handleLogin} users={USER_ROSTER} />}
+      {screen === 'chat' && currentUser && currentBot && (
         <Chat
-          bot={activeBots}
-          botConfig={BOT_CONFIG[activeBots]}
-          webhookUrl={webhookUrls[activeBots]}
-          onBack={handleBack}
+          user={currentUser}
+          bot={currentBot}
+          webhookUrl={webhookUrl}
+          onSettingsOpen={() => setScreen('settings')}
+          onLogout={handleLogout}
         />
       )}
-      {screen === 'settings' && (
+      {screen === 'settings' && currentUser && currentBot && (
         <Settings
-          botConfig={BOT_CONFIG}
-          webhookUrls={webhookUrls}
-          onSave={handleSaveWebhooks}
-          onBack={() => setScreen('home')}
+          user={currentUser}
+          bot={currentBot}
+          webhookUrl={webhookUrl}
+          onWebhookUpdate={handleWebhookUpdate}
+          onBack={() => setScreen('chat')}
+          onLogout={handleLogout}
         />
       )}
     </div>

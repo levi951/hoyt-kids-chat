@@ -1,205 +1,167 @@
 import { useState } from 'react'
 
+interface User {
+  id: string
+  name: string
+  role: string
+}
+
 interface BotConfig {
-  raptor: { name: string; subtitle: string; icon: string; primaryColor: string; containerColor: string }
-  odysseus: { name: string; subtitle: string; icon: string; primaryColor: string; containerColor: string }
+  id: string
+  name: string
+  icon: string
+  accentColor: string
 }
 
 interface SettingsProps {
-  botConfig: BotConfig
-  webhookUrls: Record<'raptor' | 'odysseus', string>
-  onSave: (urls: Record<'raptor' | 'odysseus', string>) => void
+  user: User
+  bot: BotConfig
+  webhookUrl: string
+  onWebhookUpdate: (url: string) => void
   onBack: () => void
+  onLogout: () => void
 }
 
-export default function Settings({ botConfig, webhookUrls, onSave, onBack }: SettingsProps) {
-  const [urls, setUrls] = useState(webhookUrls)
+export default function Settings({ user, bot, webhookUrl, onWebhookUpdate, onBack, onLogout }: SettingsProps) {
+  const [url, setUrl] = useState(webhookUrl)
   const [saved, setSaved] = useState(false)
 
   const handleSave = () => {
-    onSave(urls)
+    onWebhookUpdate(url)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
 
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=256&data=${encodeURIComponent(url)}`
+
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#f5f7f9' }}>
+    <div className="min-h-screen flex flex-col bg-black text-white">
       {/* Header */}
-      <header className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-xl shadow-[0_12px_40px_0_rgba(0,0,0,0.06)] flex items-center justify-between px-6 h-20">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={onBack}
-            className="text-2xl hover:scale-95 transition-transform text-teal-600"
-          >
-            <span className="material-symbols-outlined">arrow_back</span>
-          </button>
-          <h1 className="font-bold text-xl text-teal-600">Chat Buddies</h1>
-        </div>
+      <header className="fixed top-0 w-full z-50 bg-black border-b border-gray-900 flex items-center justify-between px-6 h-20">
+        <h1 className="font-black text-sm uppercase tracking-widest" style={{ color: bot.accentColor }}>
+          Settings
+        </h1>
+        <button
+          onClick={onLogout}
+          className="w-10 h-10 flex items-center justify-center hover:bg-gray-900 transition-colors rounded"
+        >
+          <span className="material-symbols-outlined text-gray-400 hover:text-white">logout</span>
+        </button>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 mt-28 pb-32 px-6 max-w-2xl mx-auto w-full">
-        <header className="mb-10">
-          <h2 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">Buddy Connections</h2>
-          <p className="text-gray-600 text-lg">Connect your explorers to their webhooks.</p>
-        </header>
+      <main className="flex-1 mt-20 pb-12 px-6">
+        <div className="max-w-3xl mx-auto space-y-12">
+          {/* User Info */}
+          <section className="pt-6">
+            <p className="text-gray-500 text-xs uppercase tracking-widest mb-4">You are logged in as</p>
+            <div className="flex items-center gap-4 p-6 bg-gray-950 border border-gray-800 rounded">
+              <div
+                className="w-12 h-12 rounded flex items-center justify-center text-white"
+                style={{ backgroundColor: bot.accentColor }}
+              >
+                <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
+                  {bot.icon}
+                </span>
+              </div>
+              <div>
+                <p className="text-white font-bold">{user.name}</p>
+                <p className="text-gray-500 text-xs">{user.role} → {bot.name}</p>
+              </div>
+            </div>
+          </section>
 
-        {/* Connection Cards */}
-        <div className="grid gap-6">
-          {/* Raptor Card */}
-          <SettingCard
-            name={botConfig.raptor.name}
-            subtitle={botConfig.raptor.subtitle}
-            icon={botConfig.raptor.icon}
-            color={botConfig.raptor.primaryColor}
-            containerBg={botConfig.raptor.containerColor}
-            webhook={urls.raptor}
-            onWebhookChange={(val) => setUrls({ ...urls, raptor: val })}
-            status="Connected"
-          />
+          {/* Webhook Configuration */}
+          <section>
+            <p className="text-gray-500 text-xs uppercase tracking-widest mb-6">Webhook Configuration</p>
 
-          {/* Odysseus Card */}
-          <SettingCard
-            name={botConfig.odysseus.name}
-            subtitle={botConfig.odysseus.subtitle}
-            icon={botConfig.odysseus.icon}
-            color={botConfig.odysseus.primaryColor}
-            containerBg={botConfig.odysseus.containerColor}
-            webhook={urls.odysseus}
-            onWebhookChange={(val) => setUrls({ ...urls, odysseus: val })}
-            status="Connected"
-          />
-        </div>
+            <div className="space-y-6">
+              {/* URL Input */}
+              <div>
+                <label className="block text-xs font-bold text-gray-400 mb-3 uppercase tracking-widest">
+                  n8n Webhook URL
+                </label>
+                <input
+                  type="text"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="https://n8n.hoytexteriors.com/webhook/..."
+                  className="w-full px-5 py-3 bg-gray-950 border border-gray-800 focus:border-gray-700 text-white placeholder:text-gray-600 focus:outline-none rounded transition-colors font-mono text-sm"
+                />
+                <p className="text-gray-600 text-xs mt-2">
+                  Paste the full webhook URL from your n8n workflow here.
+                </p>
+              </div>
 
-        {/* Save Button */}
-        <div className="mt-8 flex flex-col gap-3">
+              {/* QR Code Display */}
+              {url && (
+                <div className="p-6 bg-gray-950 border border-gray-800 rounded space-y-4">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">QR Code Setup</p>
+                  <div className="flex flex-col items-center gap-4">
+                    <img
+                      src={qrUrl}
+                      alt="Webhook URL QR Code"
+                      className="w-48 h-48 p-2 bg-white rounded"
+                    />
+                    <p className="text-gray-600 text-xs text-center">
+                      Scan this code to share your webhook URL with another device
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Save Button */}
+              <button
+                onClick={handleSave}
+                disabled={!url.trim()}
+                className="w-full py-4 text-white font-bold uppercase tracking-widest rounded transition-all disabled:opacity-30"
+                style={{
+                  backgroundColor: url.trim() ? bot.accentColor : '#333',
+                }}
+              >
+                {saved ? '✓ Saved' : 'Save Webhook'}
+              </button>
+            </div>
+          </section>
+
+          {/* API Reference */}
+          <section className="pb-12">
+            <p className="text-gray-500 text-xs uppercase tracking-widest mb-6">API Reference</p>
+            <div className="p-6 bg-gray-950 border border-gray-800 rounded font-mono text-xs space-y-4">
+              <div>
+                <p className="text-gray-400 mb-2">REQUEST:</p>
+                <pre className="text-gray-300 overflow-x-auto">
+{`POST ${url || '[your-webhook-url]'}
+Content-Type: application/json
+
+{
+  "message": "user message",
+  "userId": "${user.id}",
+  "botId": "${bot.id}",
+  "history": [...]
+}`}
+                </pre>
+              </div>
+              <div>
+                <p className="text-gray-400 mb-2">RESPONSE:</p>
+                <pre className="text-gray-300 overflow-x-auto">
+{`{
+  "response": "bot reply here"
+}`}
+                </pre>
+              </div>
+            </div>
+          </section>
+
+          {/* Back Button */}
           <button
-            onClick={handleSave}
-            className="w-full py-4 text-white font-bold text-lg rounded-full shadow-lg active:scale-95 transition-all flex items-center justify-center gap-3"
-            style={{ backgroundColor: '#006947' }}
+            onClick={onBack}
+            className="w-full py-3 border border-gray-800 hover:border-gray-700 bg-gray-950 hover:bg-gray-900 transition-all text-gray-400 hover:text-white font-bold rounded"
           >
-            <span className="material-symbols-outlined">save</span>
-            {saved ? 'Saved!' : 'Save Connections'}
+            Back to Chat
           </button>
-          <button className="w-full py-4 text-gray-600 font-bold text-sm hover:text-gray-900 transition-colors flex items-center justify-center gap-2">
-            <span className="material-symbols-outlined text-xl">help</span>
-            How do I find my Webhook URLs?
-          </button>
-        </div>
-
-        {/* Info Box */}
-        <div className="mt-12 bg-yellow-50 border-2 border-dashed border-yellow-300 rounded-xl p-6 flex items-start gap-6">
-          <div className="bg-yellow-500 w-14 h-14 rounded-full flex items-center justify-center text-white flex-shrink-0">
-            <span className="material-symbols-outlined text-3xl">auto_awesome</span>
-          </div>
-          <div>
-            <h4 className="font-bold text-gray-900">Pro Tip</h4>
-            <p className="text-gray-700 text-sm">Once connected, your buddies can learn from conversations in real-time!</p>
-          </div>
         </div>
       </main>
-
-      {/* Bottom Nav */}
-      <nav className="fixed bottom-0 left-0 w-full h-24 flex justify-around items-center px-4 pb-4 bg-white/80 backdrop-blur-xl shadow-[0_-12px_40px_0_rgba(0,0,0,0.06)] rounded-t-3xl z-50">
-        <NavLink icon="pets" label="Raptor" />
-        <NavLink icon="grid_view" label="Home" />
-        <NavLink icon="rocket_launch" label="Odysseus" />
-      </nav>
-    </div>
-  )
-}
-
-interface SettingCardProps {
-  name: string
-  subtitle: string
-  icon: string
-  color: string
-  containerBg: string
-  webhook: string
-  onWebhookChange: (value: string) => void
-  status: string
-}
-
-function SettingCard({
-  name,
-  subtitle,
-  icon,
-  color,
-  containerBg,
-  webhook,
-  onWebhookChange,
-  status,
-}: SettingCardProps) {
-  return (
-    <div
-      className="rounded-xl p-8 transition-all hover:shadow-lg relative overflow-hidden"
-      style={{ backgroundColor: '#eef1f3' }}
-    >
-      {/* Status Badge */}
-      <div className="absolute top-6 right-6 flex items-center gap-2 px-4 py-1.5 rounded-full" style={{ backgroundColor: `${color}20` }}>
-        <span
-          className="w-2.5 h-2.5 rounded-full"
-          style={{ backgroundColor: color }}
-        />
-        <span className="text-xs font-bold uppercase tracking-widest" style={{ color }}>
-          {status}
-        </span>
-      </div>
-
-      {/* Bot Info */}
-      <div className="flex items-start gap-5 mb-8">
-        <div
-          className="w-16 h-16 rounded-lg flex items-center justify-center text-white"
-          style={{ backgroundColor: color }}
-        >
-          <span
-            className="material-symbols-outlined text-4xl"
-            style={{ fontVariationSettings: "'FILL' 1" }}
-          >
-            {icon}
-          </span>
-        </div>
-        <div>
-          <h3 className="text-2xl font-bold" style={{ color }}>
-            {name}
-          </h3>
-          <p className="text-gray-600 text-sm">{subtitle}</p>
-        </div>
-      </div>
-
-      {/* Input */}
-      <div className="space-y-3">
-        <label className="font-bold text-gray-600 text-sm px-2 block">
-          n8n Webhook URL ({name})
-        </label>
-        <div className="relative">
-          <input
-            type="text"
-            value={webhook}
-            onChange={(e) => onWebhookChange(e.target.value)}
-            placeholder="Paste webhook URL here..."
-            className="w-full border-none rounded-lg px-6 py-4 text-gray-900 focus:ring-2 transition-all shadow-sm"
-            style={{ '--ring-color': color } as any}
-          />
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400">
-            link
-          </span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-interface NavLinkProps {
-  icon: string
-  label: string
-}
-
-function NavLink({ icon, label }: NavLinkProps) {
-  return (
-    <div className="flex flex-col items-center justify-center px-6 py-2 rounded-2xl hover:bg-gray-100 transition-all">
-      <span className="material-symbols-outlined mb-1 text-2xl text-gray-500">{icon}</span>
-      <span className="font-medium text-xs text-gray-500">{label}</span>
     </div>
   )
 }

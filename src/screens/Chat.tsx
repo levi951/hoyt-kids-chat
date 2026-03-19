@@ -7,22 +7,31 @@ interface Message {
   timestamp: number
 }
 
-interface BotConfig {
+interface User {
+  id: string
   name: string
-  subtitle: string
+  role: string
+  botId: string
+}
+
+interface BotConfig {
+  id: string
+  name: string
+  role: string
   icon: string
-  primaryColor: string
-  containerColor: string
+  accentColor: string
+  description: string
 }
 
 interface ChatProps {
-  bot: 'raptor' | 'odysseus'
-  botConfig: BotConfig
+  user: User
+  bot: BotConfig
   webhookUrl: string
-  onBack: () => void
+  onSettingsOpen: () => void
+  onLogout: () => void
 }
 
-export default function Chat({ bot, botConfig, webhookUrl, onBack }: ChatProps) {
+export default function Chat({ user, bot, webhookUrl, onSettingsOpen, onLogout }: ChatProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -30,11 +39,11 @@ export default function Chat({ bot, botConfig, webhookUrl, onBack }: ChatProps) 
 
   // Load conversation from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem(`chat_${bot}`)
+    const saved = localStorage.getItem(`chat_${user.id}_${bot.id}`)
     if (saved) {
       setMessages(JSON.parse(saved))
     }
-  }, [bot])
+  }, [user.id, bot.id])
 
   // Scroll to bottom
   useEffect(() => {
@@ -61,7 +70,8 @@ export default function Chat({ bot, botConfig, webhookUrl, onBack }: ChatProps) 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: input,
-          bot,
+          userId: user.id,
+          botId: bot.id,
           history: messages,
         }),
       })
@@ -78,7 +88,7 @@ export default function Chat({ bot, botConfig, webhookUrl, onBack }: ChatProps) 
 
       setMessages((prev) => {
         const updated = [...prev, assistantMessage]
-        localStorage.setItem(`chat_${bot}`, JSON.stringify(updated))
+        localStorage.setItem(`chat_${user.id}_${bot.id}`, JSON.stringify(updated))
         return updated
       })
     } catch (error) {
@@ -86,7 +96,7 @@ export default function Chat({ bot, botConfig, webhookUrl, onBack }: ChatProps) 
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Sorry, I had trouble understanding that. Can you try again?',
+        content: 'Sorry, I had trouble connecting. Check your webhook URL in settings.',
         timestamp: Date.now(),
       }
       setMessages((prev) => [...prev, errorMessage])
@@ -96,54 +106,67 @@ export default function Chat({ bot, botConfig, webhookUrl, onBack }: ChatProps) 
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#f5f7f9' }}>
+    <div className="min-h-screen flex flex-col bg-black text-white">
       {/* Header */}
-      <header className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-xl shadow-[0_12px_40px_0_rgba(0,0,0,0.06)] flex items-center justify-between px-6 h-20">
+      <header className="fixed top-0 w-full z-50 bg-black border-b border-gray-900 flex items-center justify-between px-6 h-20">
         <div className="flex items-center gap-4">
-          <button
-            onClick={onBack}
-            className="text-2xl hover:scale-95 transition-transform"
-            style={{ color: botConfig.primaryColor }}
+          <div
+            className="w-12 h-12 rounded flex items-center justify-center"
+            style={{ backgroundColor: bot.accentColor }}
           >
-            <span className="material-symbols-outlined">arrow_back</span>
-          </button>
-          <h1 className="font-bold text-xl" style={{ color: botConfig.primaryColor }}>
-            Chat Buddies
-          </h1>
+            <span
+              className="material-symbols-outlined text-lg text-white"
+              style={{ fontVariationSettings: "'FILL' 1" }}
+            >
+              {bot.icon}
+            </span>
+          </div>
+          <div>
+            <h1 className="font-black text-sm uppercase tracking-widest" style={{ color: bot.accentColor }}>
+              {bot.name}
+            </h1>
+            <p className="text-gray-500 text-xs">{user.name}</p>
+          </div>
         </div>
-        <div
-          className="w-10 h-10 rounded-full flex items-center justify-center"
-          style={{ backgroundColor: botConfig.containerColor }}
-        >
-          <span
-            className="material-symbols-outlined text-xl"
-            style={{ color: botConfig.primaryColor, fontVariationSettings: "'FILL' 1" }}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onSettingsOpen}
+            className="w-10 h-10 flex items-center justify-center hover:bg-gray-900 transition-colors rounded"
           >
-            {botConfig.icon}
-          </span>
+            <span className="material-symbols-outlined text-gray-400 hover:text-white">settings</span>
+          </button>
+          <button
+            onClick={onLogout}
+            className="w-10 h-10 flex items-center justify-center hover:bg-gray-900 transition-colors rounded"
+          >
+            <span className="material-symbols-outlined text-gray-400 hover:text-white">logout</span>
+          </button>
         </div>
       </header>
 
       {/* Messages */}
-      <main className="flex-1 mt-20 mb-32 px-4 py-6 overflow-y-auto">
-        <div className="max-w-2xl mx-auto space-y-6">
+      <main className="flex-1 mt-20 mb-32 px-6 py-6 overflow-y-auto">
+        <div className="max-w-3xl mx-auto space-y-6">
           {messages.length === 0 && (
-            <div className="text-center py-12">
+            <div className="text-center py-16 mt-12">
               <div
-                className="w-32 h-32 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl"
-                style={{ backgroundColor: botConfig.containerColor }}
+                className="w-24 h-24 rounded flex items-center justify-center mx-auto mb-6"
+                style={{ backgroundColor: bot.accentColor }}
               >
                 <span
-                  className="material-symbols-outlined text-6xl"
-                  style={{ color: botConfig.primaryColor, fontVariationSettings: "'FILL' 1" }}
+                  className="material-symbols-outlined text-5xl text-white"
+                  style={{ fontVariationSettings: "'FILL' 1" }}
                 >
-                  {botConfig.icon}
+                  {bot.icon}
                 </span>
               </div>
-              <h2 className="font-black text-3xl mb-2" style={{ color: botConfig.primaryColor }}>
-                Meet {botConfig.name}
-              </h2>
-              <p className="text-gray-600">Say hello and start chatting!</p>
+              <h2 className="font-black text-2xl mb-2">{bot.name}</h2>
+              <p className="text-gray-500 text-sm">{bot.description}</p>
+              {!webhookUrl && (
+                <p className="text-red-500 text-xs mt-4">
+                  ⚠️ Webhook not configured. Go to Settings to add your webhook URL.
+                </p>
+              )}
             </div>
           )}
 
@@ -154,24 +177,24 @@ export default function Chat({ bot, botConfig, webhookUrl, onBack }: ChatProps) 
             >
               {msg.role === 'assistant' && (
                 <div
-                  className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center"
-                  style={{ backgroundColor: botConfig.containerColor }}
+                  className="w-10 h-10 rounded flex-shrink-0 flex items-center justify-center"
+                  style={{ backgroundColor: bot.accentColor }}
                 >
                   <span
-                    className="material-symbols-outlined text-sm"
-                    style={{ color: botConfig.primaryColor, fontVariationSettings: "'FILL' 1" }}
+                    className="material-symbols-outlined text-sm text-white"
+                    style={{ fontVariationSettings: "'FILL' 1" }}
                   >
-                    {botConfig.icon}
+                    {bot.icon}
                   </span>
                 </div>
               )}
               <div
-                className={`p-4 rounded-xl shadow-sm max-w-xs ${
+                className={`px-5 py-3 rounded-lg max-w-md ${
                   msg.role === 'user'
-                    ? 'bg-white text-gray-900 rounded-br-none'
-                    : 'text-white rounded-bl-none'
+                    ? 'bg-gray-900 text-white rounded-br-none ml-auto'
+                    : 'bg-gray-900 text-white rounded-bl-none border border-gray-800'
                 }`}
-                style={msg.role === 'assistant' ? { backgroundColor: botConfig.containerColor } : {}}
+                style={msg.role === 'user' ? { borderTop: `2px solid ${bot.accentColor}` } : {}}
               >
                 <p className="text-sm leading-relaxed">{msg.content}</p>
               </div>
@@ -181,23 +204,23 @@ export default function Chat({ bot, botConfig, webhookUrl, onBack }: ChatProps) 
           {loading && (
             <div className="flex items-end gap-3">
               <div
-                className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center"
-                style={{ backgroundColor: botConfig.containerColor }}
+                className="w-10 h-10 rounded flex-shrink-0 flex items-center justify-center"
+                style={{ backgroundColor: bot.accentColor }}
               >
                 <span
-                  className="material-symbols-outlined text-sm"
-                  style={{ color: botConfig.primaryColor }}
+                  className="material-symbols-outlined text-sm text-white"
+                  style={{ fontVariationSettings: "'FILL' 1" }}
                 >
-                  {botConfig.icon}
+                  {bot.icon}
                 </span>
               </div>
-              <div className="flex gap-1.5 p-3 rounded-full" style={{ backgroundColor: botConfig.containerColor }}>
+              <div className="flex gap-1.5 px-4 py-3 rounded-lg bg-gray-900">
                 {[0, 0.2, 0.4].map((delay) => (
                   <div
                     key={delay}
                     className="w-2 h-2 rounded-full animate-pulse"
                     style={{
-                      backgroundColor: botConfig.primaryColor,
+                      backgroundColor: bot.accentColor,
                       animationDelay: `${delay}s`,
                     }}
                   />
@@ -211,26 +234,21 @@ export default function Chat({ bot, botConfig, webhookUrl, onBack }: ChatProps) 
       </main>
 
       {/* Input Bar */}
-      <footer className="fixed bottom-24 left-0 w-full px-4 py-4">
-        <div className="max-w-2xl mx-auto flex items-center gap-3 bg-gray-100 p-2 rounded-lg shadow-xl">
-          <button className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-gray-600 hover:scale-95 transition-transform">
-            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
-              add
-            </span>
-          </button>
+      <footer className="fixed bottom-0 left-0 w-full px-6 py-4 bg-black border-t border-gray-900">
+        <div className="max-w-3xl mx-auto flex items-center gap-3">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-            placeholder={`Message ${botConfig.name}...`}
-            className="flex-1 bg-transparent border-none focus:outline-none text-gray-900 placeholder:text-gray-500"
+            placeholder={`Message ${bot.name}...`}
+            className="flex-1 px-5 py-3 bg-gray-900 border border-gray-800 focus:border-gray-700 text-white placeholder:text-gray-600 focus:outline-none rounded transition-colors"
           />
           <button
             onClick={handleSendMessage}
-            disabled={!input.trim() || loading}
-            className="w-12 h-12 rounded-full text-white flex items-center justify-center shadow-lg active:scale-95 transition-all disabled:opacity-50"
-            style={{ backgroundColor: botConfig.primaryColor }}
+            disabled={!input.trim() || loading || !webhookUrl}
+            className="w-12 h-12 flex items-center justify-center text-white rounded transition-all disabled:opacity-30"
+            style={{ backgroundColor: bot.accentColor }}
           >
             <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
               send
@@ -238,13 +256,6 @@ export default function Chat({ bot, botConfig, webhookUrl, onBack }: ChatProps) 
           </button>
         </div>
       </footer>
-
-      {/* Bottom Nav */}
-      <nav className="fixed bottom-0 left-0 w-full h-24 flex justify-around items-center px-4 pb-4 bg-white/80 backdrop-blur-xl shadow-[0_-12px_40px_0_rgba(0,0,0,0.06)] rounded-t-3xl z-40">
-        <NavLink icon="pets" label="Raptor" active={bot === 'raptor'} />
-        <NavLink icon="grid_view" label="Home" active={false} onClick={onBack} />
-        <NavLink icon="rocket_launch" label="Odysseus" active={bot === 'odysseus'} />
-      </nav>
     </div>
   )
 }
