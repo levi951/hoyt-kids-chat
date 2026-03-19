@@ -77,6 +77,14 @@ export default function Settings({ user, bot, webhookUrl, onWebhookUpdate, onBac
             <p className="text-gray-500 text-xs uppercase tracking-widest mb-4 sm:mb-6">Webhook Configuration</p>
 
             <div className="space-y-4 sm:space-y-6">
+              {/* Status Badge */}
+              <div className="flex items-center gap-2 px-4 py-2 bg-green-900 bg-opacity-20 border border-green-800 rounded">
+                <span className="material-symbols-outlined text-green-400 text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
+                  check_circle
+                </span>
+                <p className="text-green-300 text-xs font-semibold">✓ Webhook Auto-Configured</p>
+              </div>
+
               {/* URL Input */}
               <div>
                 <label className="block text-xs font-bold text-gray-400 mb-2 sm:mb-3 uppercase tracking-widest">
@@ -90,7 +98,7 @@ export default function Settings({ user, bot, webhookUrl, onWebhookUpdate, onBac
                   className="w-full px-3 sm:px-5 py-2 sm:py-3 bg-gray-950 border border-gray-800 focus:border-gray-700 text-white placeholder:text-gray-600 focus:outline-none rounded transition-colors font-mono text-xs sm:text-sm"
                 />
                 <p className="text-gray-600 text-xs mt-2">
-                  Paste the full webhook URL from your n8n workflow here.
+                  Your webhook is automatically configured. You can override with a custom URL if needed.
                 </p>
               </div>
 

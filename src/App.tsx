@@ -57,6 +57,29 @@ const PHONE_CREDENTIALS: Record<string, string> = {
   '651-212-4965': 'levi',      // Hoyt main line (Levi)
 }
 
+// n8n webhook configuration (auto-generated based on bot)
+// Nash (n8n server) is at Tailscale IP 100.72.252.5:5678
+const N8N_BASE_URL = 'http://100.72.252.5:5678/webhook'
+
+// Webhook path for each bot workflow
+const WEBHOOK_PATHS: Record<BotId, string> = {
+  wraybot: 'hoyt-wraybot-webhook',
+  spike: 'hoyt-spike-webhook',
+  mack: 'hoyt-mack-webhook',
+  jane: 'hoyt-jane-webhook',
+  gage: 'hoyt-gage-webhook',
+  tally: 'hoyt-tally-webhook',
+  raptor: 'hoyt-raptor-webhook',
+  odysseus: 'hoyt-odysseus-webhook',
+  betty: 'hoyt-betty-webhook',
+  nash: 'hoyt-nash-webhook',
+}
+
+// Generate webhook URL for a bot
+const getWebhookUrl = (botId: BotId): string => {
+  return `${N8N_BASE_URL}/${WEBHOOK_PATHS[botId]}`
+}
+
 export default function App() {
   const [screen, setScreen] = useState<Screen>('login')
   const [currentUser, setCurrentUser] = useState<User | null>(null)
@@ -75,7 +98,8 @@ export default function App() {
       if (user) {
         setCurrentUser(user)
         setCurrentBot(BOT_CATALOG[user.botId])
-        setWebhookUrl(localStorage.getItem(`webhook_${user.botId}`) || '')
+        // Auto-generate webhook URL from bot ID
+        setWebhookUrl(getWebhookUrl(user.botId))
         localStorage.setItem('hoyt_user', JSON.stringify(user))
         setScreen('chat')
         // Clean up URL (remove query params)
@@ -90,7 +114,8 @@ export default function App() {
       const user: User = JSON.parse(saved)
       setCurrentUser(user)
       setCurrentBot(BOT_CATALOG[user.botId as BotId])
-      setWebhookUrl(localStorage.getItem(`webhook_${user.botId}`) || '')
+      // Auto-generate webhook URL from bot ID
+      setWebhookUrl(getWebhookUrl(user.botId))
       setScreen('chat')
     }
   }, [])
@@ -100,7 +125,8 @@ export default function App() {
     if (user) {
       setCurrentUser(user)
       setCurrentBot(BOT_CATALOG[user.botId])
-      setWebhookUrl(localStorage.getItem(`webhook_${user.botId}`) || '')
+      // Auto-generate webhook URL from bot ID
+      setWebhookUrl(getWebhookUrl(user.botId))
       localStorage.setItem('hoyt_user', JSON.stringify(user))
       setScreen('chat')
     }
